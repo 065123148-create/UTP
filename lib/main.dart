@@ -1,17 +1,60 @@
+// lib/main.dart
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:utp_flutter/firebase_options.dart';
-import 'pages/login_page.dart';
-import 'pages/otp_page.dart';
-import 'pages/home_page.dart';
-import 'pages/favorite_page.dart';
-import 'pages/pesan_page.dart';
-import 'pages/profile_page.dart';
+import 'firebase_options.dart';
+
+// ==== MODULES GETX ====
+
+// Auth
+import 'modules/auth/login_binding.dart';
+import 'modules/auth/login_view.dart';
+import 'modules/auth/register_binding.dart';
+import 'modules/auth/register_view.dart';
+
+// OTP (MODULE BARU)
+import 'modules/auth/otp/otp_binding.dart';
+import 'modules/auth/otp/otp_view.dart';
+
+// Home
+import 'modules/home/home_binding.dart';
+import 'modules/home/home_view.dart';
+
+// Favorite
+import 'modules/favorite/favorite_binding.dart';
+import 'modules/favorite/favorite_view.dart';
+
+// Pesan
+import 'modules/pesan/pesan_binding.dart';
+import 'modules/pesan/pesan_view.dart';
+
+// Search (dipakai dari HomeView)
+import 'modules/search/search_binding.dart';
+
+// Profile (MVVM + GetX)
+import 'modules/profile/profile_binding.dart';
+import 'modules/profile/profile_view.dart';
+
+// Chatbot (MODULE BARU MVVM + GetX)
+import 'modules/chatbot/chatbot_binding.dart';
+import 'modules/chatbot/chatbot_view.dart';
+
+// Payment (MODULE BARU MVVM + GetX)
+import 'modules/payment/payment_binding.dart';
+import 'modules/payment/payment_view.dart';
+
+// Chat room
+import 'modules/chat_room/chat_room_binding.dart';
+import 'modules/chat_room/chat_room_view.dart';
+
+// ==== PAGE LAMA ====
+// Sudah TIDAK dipakai lagi, termasuk otp_page.dart
+// import 'pages/otp_page.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // WAJIB
+  WidgetsFlutterBinding.ensureInitialized();
 
   // INIT SUPABASE
   await Supabase.initialize(
@@ -21,7 +64,21 @@ Future<void> main() async {
   );
 
   // INIT FIREBASE
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // ==== REGISTER BINDING GLOBAL (ViewModel) ====
+  LoginBinding().dependencies(); // LoginViewModel
+  RegisterBinding().dependencies(); // RegisterViewModel
+  HomeBinding().dependencies(); // HomeViewModel
+  FavoriteBinding().dependencies(); // FavoriteViewModel
+  PesanBinding().dependencies(); // PesanViewModel
+  SearchBinding().dependencies(); // SearchViewModel
+  ProfileBinding().dependencies(); // ProfileViewModel
+  // NOTE:
+  // ChatbotBinding, PaymentBinding, ChatRoomBinding, OtpBinding
+  // di-handle lewat GetPage (route '/chatbot', '/payment', '/chat-room', '/otp').
 
   runApp(const MyApp());
 }
@@ -31,10 +88,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
+      title: 'Stay&Co',
       debugShowCheckedModeBanner: false,
 
-      // THEME GLOBAL
+      // ==== THEME GLOBAL ====
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
         appBarTheme: const AppBarTheme(
@@ -51,38 +109,68 @@ class MyApp extends StatelessWidget {
         useMaterial3: false,
       ),
 
-      home: LoginPage(),
+      // ==== HALAMAN AWAL (LOGIN, pakai modules/auth/LoginView) ====
+      home: const LoginView(),
 
+      // ==== ROUTE GETX (GETPAGES) ====
+      getPages: [
+        GetPage(
+          name: '/chatbot',
+          page: () => const ChatbotView(),
+          binding: ChatbotBinding(),
+        ),
+        GetPage(
+          name: '/payment',
+          page: () => const PaymentView(),
+          binding: PaymentBinding(),
+        ),
+        GetPage(
+          name: '/chat-room',
+          page: () => const ChatRoomView(),
+          binding: ChatRoomBinding(),
+        ),
+        GetPage(
+          name: '/otp',
+          page: () => const OtpView(),
+          binding: OtpBinding(),
+        ),
+        // Kalau mau, nanti route lain bisa dipindah ke GetPage juga.
+      ],
+
+      // ==== ROUTES BAWAAN FLUTTER MASIH BERFUNGSI ====
       routes: {
-        '/otp': (context) => const OtpPage(phoneNumber: ''),
         '/main': (context) => const MainPage(),
       },
     );
   }
 }
 
-///  MAIN PAGE (Bottom Navigation)
+// ============================================================
+// ================== MAIN PAGE (BOTTOM NAV) ==================
+// ============================================================
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
   @override
-  _MainPageState createState() => _MainPageState();
+  State<MainPage> createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  final List<Widget> pages = [
-    HomePage(),
-    FavoritePage(),
-    const PesanPage(),
-    ProfilePage(),
+  // Semua tab pakai MODULES (MVVM + GetX)
+  final List<Widget> pages = const [
+    HomeView(), // Home modules/home
+    FavoriteView(), // Favorite modules/favorite
+    PesanView(), // Pesan modules/pesan
+    ProfileView(), // Profile modules/profile
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: pages[_selectedIndex],
+
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
         currentIndex: _selectedIndex,
